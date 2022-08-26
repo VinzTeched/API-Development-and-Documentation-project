@@ -44,6 +44,7 @@ class TriviaTestCase(unittest.TestCase):
     def test_get_paginated_questions(self):
         res = self.client().get('/questions')
         data = json.loads(res.data)
+        
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["success"], True)
         self.assertTrue(data["total_questions"])
@@ -61,6 +62,7 @@ class TriviaTestCase(unittest.TestCase):
     def test_get_categories(self):
         res = self.client().get('/categories')
         data = json.loads(res.data)
+
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["success"], True)
         self.assertTrue(data["categories"])
@@ -122,17 +124,19 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data["total_questions"], 0)
         self.assertEqual(len(data["questions"]), 0)
 
-    def test_questions_in_category(self):
+    def test_categorised_questions(self):
         res = self.client().get('/categories/1/questions')
         data = json.loads(res.data)
+
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data["success"], True)
         self.assertNotEqual(len(data["questions"]), 0)
         self.assertEqual(data["current_category"], "Science")
 
-    def test_questions_in_category_not_found(self):
+    def test_categorised_questions_not_found(self):
         res = self.client().get('/categories/100/questions')
         data = json.loads(res.data)
+
         self.assertEqual(res.status_code, 404)
         self.assertEqual(data['success'], False)
 

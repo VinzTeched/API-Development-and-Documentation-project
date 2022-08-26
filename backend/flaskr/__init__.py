@@ -220,20 +220,19 @@ def create_app(test_config=None):
     category to be shown.
     """
     @app.route("/categories/<int:id>/questions")
-    def questions_in_category(id):
+    def category_questions(id):
  
-        category = Category.query.filter_by(id=id).one_or_none()
-
+        category = Category.query.filter(Category.id==id).one_or_none()
 
         if category:
-            query = Question.query.filter(Question.category==str(id)).all()
-            current_questions = paginate_questions(request, query)
+            my_query = Question.query.filter(Question.category==str(id)).all()
+            current_questions = paginate_questions(request, my_query)
         
             return jsonify(
                 {
                     "success": True,
                     "questions": current_questions,
-                    "total_questions": len(query),
+                    "total_questions": len(my_query),
                     "current_category": category.type
                 }
             )
@@ -256,35 +255,40 @@ def create_app(test_config=None):
     """
     @app.route('/quizzes', methods=['POST'])
     def get_quiz():
+
         # retrieve a new question not already shown
         body = request.get_json()
-        quizCategory = body.get('quiz_category')
-        previousQuestion = body.get('previous_questions')
+        quiz_category = body.get('quiz_category')
+        previous_questions = body.get('previous_questions')
+        cat_id = quiz_category['id']
 
         try:
-            if (quizCategory['id'] == 0):
-                questionsQuery = Question.query.all()
+            if cat_id == 0:
+                my_query = Question.query.filter(
+                    Question.id.notin_(previous_questions)).all()
             else:
-                questionsQuery = Question.query.filter_by(
-                    category=quizCategory['id']).all()
+                my_query = Question.query.filter(
+                    Question.id.notin_(previous_questions),
+                    Question.category == cat_id).all()
+                    
+            next_question = None
 
-            randomIndex = random.randint(0, len(questionsQuery)-1)
-            nextQuestion = questionsQuery[randomIndex]
+            if(my_query):
+                next_question = random.choice(my_query)
+                return jsonify(
+                    {
+                        'success': True,
+                        'question': next_question.format(),
+                        'previous_questions': previous_questions
+                    }
+                )
 
-            stillQuestions = True
-            while nextQuestion.id not in previousQuestion:
-                nextQuestion = questionsQuery[randomIndex]
-                return jsonify({
-                    'success': True,
-                    'question': {
-                        "answer": nextQuestion.answer,
-                        "category": nextQuestion.category,
-                        "difficulty": nextQuestion.difficulty,
-                        "id": nextQuestion.id,
-                        "question": nextQuestion.question
-                    },
-                    'previousQuestion': previousQuestion
-                })
+            else:
+                return jsonify(
+                    {
+                        "success": False
+                    }
+                )
 
         except Exception as e:
             print(e)
